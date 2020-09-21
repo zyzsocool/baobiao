@@ -17,6 +17,12 @@ class baobiao():
         self.fx = fxspotare
 
 # 读数据
+    def count(self):
+        irsnum=0
+        for i in self.asset:
+            if i['instrument']=='irs':
+                irsnum+=1
+        print(irsnum)
     def irsput(self):
         iaddress = self.address + '/衍生品报表/数据/irs交易查询与维护.xlsx'
         wb = openpyxl.load_workbook(iaddress)
@@ -48,6 +54,7 @@ class baobiao():
                 irstem['nextpaydate'] = nextpaydate
 
                 resettype = i[40].value + i[61].value
+                resettype=resettype.strip()
                 if resettype == '3M':
                     irstem['nextresetdate'] = nextpaydate
                 elif resettype == '1W':
@@ -73,13 +80,13 @@ class baobiao():
             for j in self.asset:
                 if j['code'] == i[2].value:
                     j['facevalue'] = float(i[5].value) / 10000
-                    j['marketvalue'] = float(i[6].value) / 10000
+                    j['marketvalue'] = float(i[13].value) / 10000
 
-                    j['moneyget'] = float(i[7].value) / 10000
+                    j['moneyget'] = float(i[14].value) / 10000
 
-                    j['moneypay'] = float(i[8].value) / 10000
+                    j['moneypay'] = float(i[15].value) / 10000
 
-                    message = re.split(r',|\(|\)|/', i[9].value)
+                    message = re.split(r',|\(|\)|/', i[16].value)
                     j['gettype'] = message[1]
                     j['getinterest'] = message[2]
                     j['paytype'] = message[4]
@@ -98,49 +105,78 @@ class baobiao():
                         j['moneypayday'] = (j['enddate'] - self.date).days
 
     def crmwput(self):
-
         wb = openpyxl.load_workbook(
-            self.address + '/衍生品报表/数据/crmw交易查询与维护.xlsx')
+             self.address + '/衍生品报表/数据/crmw.xlsx', data_only=True)
         ws = wb.active
         for i in ws.rows:
-            if i[1].value == '未到期交易':
+            if i[0].value=='信用风险缓释':
                 crmwtem = {}
                 crmwtem['instrument'] = 'crmw'
-                crmwtem['code'] = i[8].value
-
+                crmwtem['code'] = i[1].value
                 initialdate = datetime.datetime.strptime(
-                    i[14].value.replace('-', ''), '%Y%m%d')
+                             i[9].value.replace('-', ''), '%Y%m%d')
                 crmwtem['initialdate'] = initialdate
                 enddate = datetime.datetime.strptime(
-                    i[19].value.replace('-', ''), '%Y%m%d')
+                             i[10].value.replace('-', ''), '%Y%m%d')
                 crmwtem['enddate'] = enddate
                 crmwtem['initialday'] = (enddate - initialdate).days
                 crmwtem['dayleft'] = (enddate - self.date).days
-                crmwtem['counterparty'] = i[5].value
-                crmwtem['type'] = i[4].value
-                crmwtem['facevalue'] = float(i[16].value)
+                crmwtem['counterparty'] = i[8].value
+                crmwtem['type'] = '买入'
+                crmwtem['facevalue'] = float(i[4].value)/10000
+                crmwtem['marketvalue'] = float(i[6].value) / 10000
 
                 self.asset.append(crmwtem)
-            if i[1].value == '未到期交易':
-                initialdate = datetime.datetime.strptime(
-                    i[6].value.replace('-', ''), '%Y%m%d')
-                if initialdate.year == self.date.year:
-                    self.list7fill[1] += float(i[16].value) / 10000
 
-        wb = openpyxl.load_workbook(
-            self.address + '/衍生品报表/数据/crmw逐日盯市损益分析.xlsx')
-        ws = wb.active
-        for i in ws.rows:
-            for j in self.asset:
-                if j['code'] == i[2].value:
-                    j['marketvalue'] = float(i[6].value) / 10000
+                if initialdate.year == self.date.year:
+                    self.list7fill[1] += float(i[4].value)/10000
+
+
+
+
+        # wb = openpyxl.load_workbook(
+        #     self.address + '/衍生品报表/数据/crmw交易查询与维护.xlsx')
+        # ws = wb.active
+        # for i in ws.rows:
+        #     if i[1].value == '未到期交易':
+        #         crmwtem = {}
+        #         crmwtem['instrument'] = 'crmw'
+        #         crmwtem['code'] = i[8].value
+        #
+        #         initialdate = datetime.datetime.strptime(
+        #             i[14].value.replace('-', ''), '%Y%m%d')
+        #         crmwtem['initialdate'] = initialdate
+        #         enddate = datetime.datetime.strptime(
+        #             i[19].value.replace('-', ''), '%Y%m%d')
+        #         crmwtem['enddate'] = enddate
+        #         crmwtem['initialday'] = (enddate - initialdate).days
+        #         crmwtem['dayleft'] = (enddate - self.date).days
+        #         crmwtem['counterparty'] = i[5].value
+        #         crmwtem['type'] = i[4].value
+        #         crmwtem['facevalue'] = float(i[16].value)
+        #
+        #         self.asset.append(crmwtem)
+        #     if i[1].value == '未到期交易':
+        #         initialdate = datetime.datetime.strptime(
+        #             i[6].value.replace('-', ''), '%Y%m%d')
+        #         if initialdate.year == self.date.year:
+        #             self.list7fill[1] += float(i[16].value)
+        #
+        # wb = openpyxl.load_workbook(
+        #     self.address + '/衍生品报表/数据/crmw逐日盯市损益分析.xlsx')
+        # ws = wb.active
+        # for i in ws.rows:
+        #     for j in self.asset:
+        #         if j['code'] == i[2].value:
+        #             j['marketvalue'] = float(i[6].value) / 10000
+
 
     def forwardput(self):
         wb = openpyxl.load_workbook(
             self.address + '/衍生品报表/数据/forward逐笔损益查询.xlsx')
         ws = wb.active
         for i in ws.rows:
-            if i[2].value == '远期平盘-金市-结售汇':
+            if i[2].value == '远期平盘-金市-结售汇' or i[2].value == '远期平盘-金市-结售汇-周游力' :
                 enddate = datetime.datetime.strptime(
                     i[7].value.replace('-', ''), '%Y%m%d')
                 if (enddate - self.date).days > 0:
@@ -205,7 +241,7 @@ class baobiao():
                 initialdate = datetime.datetime.strptime(
                     i[6].value.replace('-', ''), '%Y%m%d')
                 if initialdate.year == self.date.year:
-                    self.list7fill[2] += abs(i[10].value) / 10000
+                    self.list7fill[2] += abs(float(i[9].value))*self.fx
 
     def swapput(self):
         wb = openpyxl.load_workbook(self.address + '/衍生品报表/数据/swap逐笔损益查询.xlsx')
@@ -254,17 +290,17 @@ class baobiao():
 
                     else:
                         if money1 == 'USD':
-                            momeypay = value1 * deflator * fxrate
-                            momeyget = -value2 * deflator
-                            paytype = 'USD'
-                            gettype = 'CNY'
+                            momeypay = -value2 * deflator
+                            momeyget = value1 * deflator * fxrate
+                            paytype = 'CNY'
+                            gettype = 'USD'
                             facevalue = -value2
                             usdposition = value1
                         else:
-                            momeypay = value1 * deflator
-                            momeyget = -value2 * deflator * fxrate
-                            paytype = 'CNY'
-                            gettype = 'USD'
+                            momeypay = -value2 * deflator * fxrate
+                            momeyget = value1 * deflator
+                            paytype = 'USD'
+                            gettype = 'CNY'
                             facevalue = value1
                             usdposition = value1
                     swaptem['facevalue'] = abs(
@@ -287,7 +323,7 @@ class baobiao():
             self.address + '/衍生品报表/数据/option逐笔损益查询.xlsx')
         ws = wb.active
         for i in ws.rows:
-            if i[4].value == '期权-自营-结售汇':
+            if i[4].value == '期权-自营-结售汇' or i[4].value == '期权-自营-结售汇-周游力':
                 enddate = datetime.datetime.strptime(
                     i[13].value.replace('-', ''), '%Y%m%d')
                 dayleft = (enddate - self.date).days
@@ -340,7 +376,7 @@ class baobiao():
             730,
             1095,
             1460,
-            1825,
+            1827,
             2555,
             3650,
             5475,
@@ -422,6 +458,7 @@ class baobiao():
                     i['moneypay'],
                     i['moneypayday'],
                     i['payinterest'])
+
             if i['instrument'] == 'forward' or i['instrument'] == 'swap':
                 if i['paytype'] == 'USD':
                     self.g4c_1bfiller(
@@ -511,11 +548,11 @@ class baobiao():
                             if asset['dayleft'] <= 365:
                                 addratio = 0
 
-                            elif asset['dayleft'] <= 1825:
+                            elif asset['dayleft'] <= 1827:
                                 addratio = 0.005
                                 rowplus += 8
                             else:
-                                addratio = 0.01
+                                addratio = 0.015
                                 rowplus += 16
                             if message[0] == 'NOTBANK':
                                 riskratio = message[3]
@@ -540,7 +577,7 @@ class baobiao():
 
                             if asset['dayleft'] <= 365:
                                 addratio = 0.01
-                            elif asset['dayleft'] <= 1825:
+                            elif asset['dayleft'] <= 1827:
                                 addratio = 0.05
                                 rowplus += 8
                             else:
@@ -615,10 +652,10 @@ class baobiao():
                             facevalueplus += asset['facevalue']
                             if asset['dayleft'] <= 365:
                                 addratio = 0
-                            elif asset['dayleft'] <= 1825:
+                            elif asset['dayleft'] <= 1827:
                                 addratio = 0.005
                             else:
-                                addratio = 0.01
+                                addratio = 0.015
                             if message[0] == 'BANK' and asset['dayleft'] > 91:
                                 message[3] = 0.25
                             ngrup += asset['marketvalue']
@@ -631,7 +668,7 @@ class baobiao():
                             facevalueplus += asset['facevalue']
                             if asset['dayleft'] <= 365:
                                 addratio = 0.01
-                            elif asset['dayleft'] <= 1825:
+                            elif asset['dayleft'] <= 1827:
                                 addratio = 0.05
                             else:
                                 addratio = 0.075
@@ -819,7 +856,7 @@ class baobiao():
             self.fillcontent(filler, '15,4', -irs)
         else:
             self.fillcontent(filler, '9,4')
-        self.fillcontent(filler, '9,4', crmw)
+        self.fillcontent(filler, '8,4', crmw)
         wb = openpyxl.load_workbook(address)
         ws = wb.active
         for a, b in filler.items():
@@ -924,14 +961,14 @@ class baobiao():
                 else:
                     self.fillcontent(filler, '30,5', abs(i['marketvalue']))
             elif i['instrument'] == 'crmw':
-                self.fillcontent(filler, '11,12', i['facevalue'])
-                self.fillcontent(filler, '11,13', i['facevalue'])
+                self.fillcontent(filler, '7,12', i['facevalue'])
+                self.fillcontent(filler, '7,13', i['facevalue'])
                 self.fillcontent(filler, '46,12', i['facevalue'])
                 self.fillcontent(filler, '46,13', i['marketvalue'])
                 if i['marketvalue'] > 0:
-                    self.fillcontent(filler, '30,12', i['marketvalue'])
+                    self.fillcontent(filler, '26,12', i['marketvalue'])
                 else:
-                    self.fillcontent(filler, '30,13', abs(i['marketvalue']))
+                    self.fillcontent(filler, '26,13', abs(i['marketvalue']))
             elif i['instrument'] == 'option':
                 self.fillcontent(filler, '7,6', i['facevalue'])
                 self.fillcontent(filler, '7,7', i['facevalue'])
@@ -966,7 +1003,7 @@ class baobiao():
                 positive += max(0, n)
                 negative += min(0, n)
         self.fillcontent(filler, '46,19', positive)
-        self.fillcontent(filler, '46,20', negative)
+        self.fillcontent(filler, '46,20', abs(negative))
         wb = openpyxl.load_workbook(address)
         ws = wb.active
         for a, b in filler.items():
@@ -1004,7 +1041,7 @@ class baobiao():
             column = 9
         elif day <= 1460:
             column = 10
-        elif day <= 1825:
+        elif day <= 1827:
             column = 11
         elif day <= 2555:
             column = 12
@@ -1122,14 +1159,14 @@ class baobiao():
                 else:
                     self.fillcontent(filler, '30,5', abs(i['marketvalue']))
             elif i['instrument'] == 'crmw':
-                self.fillcontent(filler, '11,12', i['facevalue'])
-                self.fillcontent(filler, '11,13', i['facevalue'])
+                self.fillcontent(filler, '7,12', i['facevalue'])
+                self.fillcontent(filler, '7,13', i['facevalue'])
                 self.fillcontent(filler, '65,12', i['facevalue'])
                 self.fillcontent(filler, '65,13', i['marketvalue'])
                 if i['marketvalue'] > 0:
-                    self.fillcontent(filler, '30,12', i['marketvalue'])
+                    self.fillcontent(filler, '26,12', i['marketvalue'])
                 else:
-                    self.fillcontent(filler, '30,13', abs(i['marketvalue']))
+                    self.fillcontent(filler, '26,13', abs(i['marketvalue']))
             elif i['instrument'] == 'option':
                 self.fillcontent(filler, '7,6', i['facevalue'])
                 self.fillcontent(filler, '7,7', i['facevalue'])
@@ -1164,12 +1201,12 @@ class baobiao():
                 positive += max(0, n)
                 negative += min(0, n)
         self.fillcontent(filler, '65,19', positive)
-        self.fillcontent(filler, '65,20', negative)
+        self.fillcontent(filler, '65,20', abs(negative))
 
         self.fillcontent(filler, '49,4', self.list7fill[0])
         self.fillcontent(filler, '49,5', self.list7fill[0])
-        self.fillcontent(filler, '49,12', self.list7fill[1])
-        self.fillcontent(filler, '49,13', self.list7fill[1])
+        self.fillcontent(filler, '45,12', self.list7fill[1])
+        self.fillcontent(filler, '45,13', self.list7fill[1])
         self.fillcontent(filler, '48,6', self.list7fill[2])
         self.fillcontent(filler, '48,7', self.list7fill[2])
         self.fillcontent(filler, '49,6', self.list7fill[3])
@@ -1221,15 +1258,19 @@ class baobiao():
         wb.save(address22)
 
 
-date = '20200331'
+date = '20200831'
 address = 'C:/Users/zyzse/Desktop'
-fxspotare = 7.0851
+fxspotare = 6.8605
 test = baobiao(date, address, fxspotare)
 test.irsput()
 test.crmwput()
 test.forwardput()
 test.optionput()
 test.swapput()
+
+print('---------------资产信息----------------')
+for a in test.asset:
+    print(a)
 
 
 test.g4c_1b()
@@ -1244,6 +1285,4 @@ test.g02()
 test.g33()
 test.list7()
 test.g22()
-print('---------------资产信息----------------')
-for a in test.asset:
-    print(a)
+
