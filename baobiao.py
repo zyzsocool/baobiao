@@ -176,7 +176,7 @@ class baobiao():
             self.address + '/衍生品报表/数据/forward逐笔损益查询.xlsx')
         ws = wb.active
         for i in ws.rows:
-            if i[2].value == '远期平盘-金市-结售汇' or i[2].value == '远期平盘-金市-结售汇-周游力' :
+            if i[2].value == '远期平盘-金市-结售汇' or i[2].value == '远期平盘-金市-结售汇-周游力'or i[2].value == '远期-自营-结售汇' :
                 enddate = datetime.datetime.strptime(
                     i[7].value.replace('-', ''), '%Y%m%d')
                 if (enddate - self.date).days > 0:
@@ -1258,9 +1258,9 @@ class baobiao():
         wb.save(address22)
 
 
-date = '20200831'
+date = '20200930'
 address = 'C:/Users/zyzse/Desktop'
-fxspotare = 6.8605
+fxspotare = 6.8101
 test = baobiao(date, address, fxspotare)
 test.irsput()
 test.crmwput()
@@ -1285,4 +1285,22 @@ test.g02()
 test.g33()
 test.list7()
 test.g22()
+print('-----------笔数核对-------------')
+k=[0,0,0,0,0]
+for i in test.asset:
+    if i['instrument']=='irs':
+        k[0]+=1
+    if i['instrument']=='crmw':
+        k[1]+=1
+    if i['instrument']=='forward':
+        k[2]+=1
+    if i['instrument']=='swap':
+        k[3]+=1
+    if i['instrument']=='option':
+        k[4]+=1
 
+print('irs笔数',k[0])
+print('crmw笔数',k[1])
+print('forward笔数',k[2])
+print('swap笔数',k[3])
+print('option笔数',k[4])
